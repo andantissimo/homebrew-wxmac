@@ -3,6 +3,7 @@ class WxmacAT31 < Formula
   homepage "https://www.wxwidgets.org"
   url "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.2/wxWidgets-3.1.2.tar.bz2"
   sha256 "4cb8d23d70f9261debf7d6cfeca667fc0a7d2b6565adb8f1c484f9b674f1f27a"
+  revision 1
   head "https://github.com/wxWidgets/wxWidgets.git"
 
   option "with-stl", "use standard C++ classes for everything"
@@ -12,7 +13,11 @@ class WxmacAT31 < Formula
   depends_on "libpng"
   depends_on "libtiff"
 
+  # Fixes ld: warning: direct access in function ... to global weak symbol ...
+  patch :DATA
+
   def install
+    ENV.cxx11
     args = [
       "--prefix=#{prefix}",
       "--enable-clipboard",
@@ -56,3 +61,38 @@ class WxmacAT31 < Formula
     system bin/"wx-config", "--libs"
   end
 end
+
+__END__
+--- a/include/wx/containr.h
++++ b/include/wx/containr.h
+@@ -270,17 +270,17 @@
+
+ protected:
+ #ifndef wxHAS_NATIVE_TAB_TRAVERSAL
+-    void OnNavigationKey(wxNavigationKeyEvent& event)
++    virtual void OnNavigationKey(wxNavigationKeyEvent& event)
+     {
+         m_container.HandleOnNavigationKey(event);
+     }
+
+-    void OnFocus(wxFocusEvent& event)
++    virtual void OnFocus(wxFocusEvent& event)
+     {
+         m_container.HandleOnFocus(event);
+     }
+
+-    void OnChildFocus(wxChildFocusEvent& event)
++    virtual void OnChildFocus(wxChildFocusEvent& event)
+     {
+         m_container.SetLastFocus(event.GetWindow());
+         event.Skip();
+--- a/include/wx/vector.h
++++ b/include/wx/vector.h
+@@ -519,7 +519,7 @@
+         // if the ctor called below throws an exception, we need to move all
+         // the elements back to their original positions in m_values
+         wxScopeGuard moveBack = wxMakeGuard(
+-                Ops::MemmoveBackward, place, place + count, after);
++                [&]() { Ops::MemmoveBackward(place, place + count, after); });
+         if ( !after )
+             moveBack.Dismiss();
