@@ -3,15 +3,15 @@ class WxmacAT31 < Formula
   homepage "https://www.wxwidgets.org"
   url "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.2/wxWidgets-3.1.2.tar.bz2"
   sha256 "4cb8d23d70f9261debf7d6cfeca667fc0a7d2b6565adb8f1c484f9b674f1f27a"
-  revision 1
+  revision 2
   head "https://github.com/wxWidgets/wxWidgets.git"
 
   option "with-stl", "use standard C++ classes for everything"
   option "with-static", "build static libraries"
 
-  depends_on "jpeg"
-  depends_on "libpng"
-  depends_on "libtiff"
+  depends_on "jpeg" unless build.with? "static"
+  depends_on "libpng" unless build.with? "static"
+  depends_on "libtiff" unless build.with? "static"
 
   # Fixes ld: warning: direct access in function ... to global weak symbol ...
   patch :DATA
@@ -31,9 +31,9 @@ class WxmacAT31 < Formula
       "--enable-unicode",
       "--enable-webkit",
       "--with-expat",
-      "--with-libjpeg",
-      "--with-libpng",
-      "--with-libtiff",
+      "--with-libjpeg#{'=builtin' if build.with? 'static'}",
+      "--with-libpng#{'=builtin' if build.with? 'static'}",
+      "--with-libtiff#{'=no' if build.with? 'static'}",
       "--with-opengl",
       "--with-osx_cocoa",
       "--with-zlib",
