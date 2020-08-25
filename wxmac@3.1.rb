@@ -3,7 +3,7 @@ class WxmacAT31 < Formula
   homepage "https://www.wxwidgets.org"
   url "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.4/wxWidgets-3.1.4.tar.bz2"
   sha256 "3ca3a19a14b407d0cdda507a7930c2e84ae1c8e74f946e0144d2fa7d881f1a94"
-  revision 1
+  revision 2
   head "https://github.com/wxWidgets/wxWidgets.git"
 
   option "with-stl", "use standard C++ classes for everything"
@@ -36,7 +36,7 @@ class WxmacAT31 < Formula
       "--with-libtiff#{'=no' if build.with? 'static'}",
       "--with-opengl",
       "--with-osx_cocoa",
-      "--with-zlib",
+      "--with-zlib#{'=builtin' if build.with? 'static'}",
       "--disable-precomp-headers",
       # This is the default option, but be explicit
       "--disable-monolithic",
