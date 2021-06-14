@@ -28,7 +28,7 @@ class WxmacAT31 < Formula
       "--enable-std_string",
       "--enable-svg",
       "--enable-unicode",
-      "--enable-webkit",
+      "--enable-webviewwebkit",
       "--with-expat",
       "--with-libjpeg#{'=builtin' if build.with? 'static'}",
       "--with-libpng#{'=builtin' if build.with? 'static'}",
