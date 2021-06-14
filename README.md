@@ -1,6 +1,6 @@
 # homebrew-wxmac
 
-This tap resurrects build options, victim of the great purge in homebrew-core...
+This tap resurrects build options deleted in homebrew-core
 
 ## How to install with options
 
