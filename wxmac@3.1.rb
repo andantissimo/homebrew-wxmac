@@ -1,9 +1,10 @@
 class WxmacAT31 < Formula
-  desc "Cross-platform C++ GUI toolkit (wxWidgets for macOS)"
+  desc "Cross-platform C++ GUI toolkit"
   homepage "https://www.wxwidgets.org"
   url "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5.tar.bz2"
   sha256 "d7b3666de33aa5c10ea41bb9405c40326e1aeb74ee725bb88f90f1d50270a224"
-  head "https://github.com/wxWidgets/wxWidgets.git"
+  license "wxWindows"
+  head "https://github.com/wxWidgets/wxWidgets.git", branch: "master"
 
   option "with-stl", "use standard C++ classes for everything"
   option "with-static", "build static libraries"
@@ -12,11 +13,14 @@ class WxmacAT31 < Formula
   depends_on "libpng" unless build.with? "static"
   depends_on "libtiff" unless build.with? "static"
 
-  # Fixes ld: warning: direct access in function ... to global weak symbol ...
-  patch :DATA
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "gtk+3"
+    depends_on "libsm"
+    depends_on "mesa-glu"
+  end
 
   def install
-    ENV.cxx11
     args = [
       "--prefix=#{prefix}",
       "--enable-clipboard",
@@ -34,14 +38,18 @@ class WxmacAT31 < Formula
       "--with-libpng#{'=builtin' if build.with? 'static'}",
       "--with-libtiff#{'=no' if build.with? 'static'}",
       "--with-opengl",
-      "--with-osx_cocoa",
       "--with-zlib#{'=builtin' if build.with? 'static'}",
       "--disable-precomp-headers",
       # This is the default option, but be explicit
       "--disable-monolithic",
-      # Set with-macosx-version-min to avoid configure defaulting to 10.5
-      "--with-macosx-version-min=#{MacOS.version}",
     ]
+
+    if OS.mac?
+      # Set with-macosx-version-min to avoid configure defaulting to 10.5
+      args << "--with-macosx-version-min=#{MacOS.version}"
+      args << "--with-osx_cocoa"
+      args << "--with-libiconv"
+    end
 
     args << "--enable-stl" if build.with? "stl"
     args << (build.with?("static") ? "--disable-shared" : "--enable-shared")
@@ -49,49 +57,18 @@ class WxmacAT31 < Formula
     system "./configure", *args
     system "make", "install"
 
-    # wx-config should reference the public prefix, not wxmac's keg
+    # wx-config should reference the public prefix, not wxwidgets's keg
     # this ensures that Python software trying to locate wxpython headers
-    # using wx-config can find both wxmac and wxpython headers,
+    # using wx-config can find both wxwidgets and wxpython headers,
     # which are linked to the same place
     inreplace "#{bin}/wx-config", prefix, HOMEBREW_PREFIX
+
+    # For consistency with the versioned wxwidgets formulae
+    bin.install_symlink "#{bin}/wx-config" => "wx-config-#{version.major_minor}"
+    (share/"wx"/version.major_minor).install share/"aclocal", share/"bakefile"
   end
 
   test do
     system bin/"wx-config", "--libs"
   end
 end
-
-__END__
---- a/include/wx/containr.h
-+++ b/include/wx/containr.h
-@@ -270,17 +270,17 @@
-
- protected:
- #ifndef wxHAS_NATIVE_TAB_TRAVERSAL
--    void OnNavigationKey(wxNavigationKeyEvent& event)
-+    virtual void OnNavigationKey(wxNavigationKeyEvent& event)
-     {
-         m_container.HandleOnNavigationKey(event);
-     }
-
--    void OnFocus(wxFocusEvent& event)
-+    virtual void OnFocus(wxFocusEvent& event)
-     {
-         m_container.HandleOnFocus(event);
-     }
-
--    void OnChildFocus(wxChildFocusEvent& event)
-+    virtual void OnChildFocus(wxChildFocusEvent& event)
-     {
-         m_container.SetLastFocus(event.GetWindow());
-         event.Skip();
---- a/include/wx/vector.h
-+++ b/include/wx/vector.h
-@@ -519,7 +519,7 @@
-         // if the ctor called below throws an exception, we need to move all
-         // the elements back to their original positions in m_values
-         wxScopeGuard moveBack = wxMakeGuard(
--                Ops::MemmoveBackward, place, place + count, after);
-+                [&]() { Ops::MemmoveBackward(place, place + count, after); });
-         if ( !after )
-             moveBack.Dismiss();
